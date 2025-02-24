@@ -2301,26 +2301,25 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	check_authenticated
 
 	# Remove the leading '?' if present
-	query_string="${querystr#\?}"
+	my_query_string="${querystr#\?}"
 
 	# Remove 'fas' and 'tos' from query string
-	cleaned_query="${query_string//, /,}"
-	export final_query=$(echo "$cleaned_query" | sed -E 's/(fas=[^,]*,? *|tos=[^,]*,? *)//g')
+	export final_query=$(echo "$my_query_string" | sed -E 's/(fas=[^,]*,? *|tos=[^,]*,? *)//g')
 
 	# IFS is comma separated 
 	echo "$final_query" | IFS=',' read -r -a params
 
 	# Iterate through the parameters and variablize each one 
 	IFS=',' 
-	# for param in $final_query; do
-	# 	key=$(echo "$param" | cut -d= -f1)
-	# 	value=$(echo "$param" | cut -d= -f2-)
-	# 	export "$key=$value"
-	# done
-	export "voucher=(207) 440 - 8296"
-	export "email=rosenjcb@gmail.com"
-	export "zipcode=24426"
-	export "complete=true"
+	for param in $final_query; do
+		key=$(echo "$param" | cut -d= -f1)
+		value=$(echo "$param" | cut -d= -f2-)
+		export "$key=$value"
+	done
+	# export "voucher=(207) 440 - 8296"
+	# export "email=rosenjcb@gmail.com"
+	# export "zipcode=24426"
+	# export "complete=true"
 
 	# if [ "$new_guest" -eq 0 ]; then
 	# 	export "new_guest=1"
