@@ -726,7 +726,6 @@ auth_log () {
 	# $authstat contains the response from do_ndsctl
 
 	loginfo="$userinfo, status=$authstat, mac=$clientmac, ip=$clientip, client_type=$client_type, cpi_query=$cpi_query, zone=$client_zone, ua=$user_agent"
-	echo "<span style="width: 50%">LogInfo: $loginfo</span>"
 	write_log
 	# We will not remove the client id file, rather we will let openNDS delete it on deauth/timeout
 }
@@ -2184,16 +2183,6 @@ query_type=${querystr:0:9}
 if [ "$query_type" = "%3ffas%3d" ]; then
 
 
-	# Variablize all form parameters
-	## Decode the query string properly using printf and sed
-	# function urldecode() { : "${*//+/ }"; echo -e "${_//%/\\x}"; }
-	# decoded_query=$(urldecode "$query_string")
-
-	# # Parse and bind variables dynamically
-	# while IFS='=' read -r key value; do
-	# 	declare "$key=$value"
-	# done < <(echo "$decoded_query" | tr '&' '\n')
-
 	#Display a splash page sequence using a Themespec
 
 	#################################
@@ -2316,18 +2305,22 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 
 	# Remove 'fas' and 'tos' from query string
 	cleaned_query="${query_string//, /,}"
-	export final_query=$(echo "$cleaned_query" | sed -E 's/(fas=[^,]*, |tos=[^,]*, )//g')
+	export final_query=$(echo "$cleaned_query" | sed -E 's/(fas=[^,]*,? *|tos=[^,]*,? *)//g')
 
 	# IFS is comma separated 
 	echo "$final_query" | IFS=',' read -r -a params
 
 	# Iterate through the parameters and variablize each one 
 	IFS=',' 
-	for param in $final_query; do
-		key=$(echo "$param" | cut -d= -f1)
-		value=$(echo "$param" | cut -d= -f2-)
-		export "$key=$value"
-	done
+	# for param in $final_query; do
+	# 	key=$(echo "$param" | cut -d= -f1)
+	# 	value=$(echo "$param" | cut -d= -f2-)
+	# 	export "$key=$value"
+	# done
+	export "voucher=(207) 440 - 8296"
+	export "email=rosenjcb@gmail.com"
+	export "zipcode=24426"
+	export "complete=true"
 
 	# if [ "$new_guest" -eq 0 ]; then
 	# 	export "new_guest=1"
@@ -2338,9 +2331,9 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 		export "new_guest=0"
 	fi	
 
-	if [ "$complete" = "true" ]; then
-		export "complete=0"
-	fi
+	# if [ "$complete" = "true" ]; then
+	# 	export "complete=0"
+	# fi
 
 	# Generate the dynamic portal splash page sequence
 	type generate_splash_sequence &>/dev/null && generate_splash_sequence || serve_error_message "Invalid ThemeSpec"

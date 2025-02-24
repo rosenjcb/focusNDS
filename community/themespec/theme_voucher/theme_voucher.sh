@@ -58,7 +58,7 @@ login_with_voucher() {
 	# This is the simple click to continue splash page with no client validation.
 	# The client is however required to accept the terms of service.
 
-	if [[ "$complete" -eq 0 ]]; then
+	if [[ "$complete" = "true" ]]; then
 		echo "<p>Scenario 3</p>"
 		echo "<p>TOS: $tos</p>"
 		voucher_validation
@@ -190,6 +190,7 @@ voucher_validation() {
 
 		# Authenticate and write to the log - returns with $ndsstatus set
 		auth_log
+		echo "<span>$ndsctlout</span>"
 
 		# output the landing page - note many CPD implementations will close as soon as Internet access is detected
 		# The client may not see this page, or only see it briefly
