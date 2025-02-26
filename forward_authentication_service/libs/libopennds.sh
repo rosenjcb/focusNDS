@@ -2302,37 +2302,25 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 
 	# Remove the leading '?' if present
 	my_query_string="${querystr#\?}"
+	cleaned_query=$(echo "$my_query_string" | sed 's/, /,/g')
+
 
 	# Remove 'fas' and 'tos' from query string
-	export final_query=$(echo "$my_query_string" | sed -E 's/(fas=[^,]*,? *|tos=[^,]*,? *)//g')
+	final_query=$(echo "$cleaned_query" | sed -E 's/(fas=[^,]*,? *|tos=[^,]*,? *)//g')
 
-	# IFS is comma separated 
-	echo "$final_query" | IFS=',' read -r -a params
-
-	# Iterate through the parameters and variablize each one 
-	IFS=',' 
-	for param in $final_query; do
-		key=$(echo "$param" | cut -d= -f1)
-		value=$(echo "$param" | cut -d= -f2-)
-		export "$key=$value"
-	done
-	# export "voucher=(207) 440 - 8296"
-	# export "email=rosenjcb@gmail.com"
-	# export "zipcode=24426"
-	# export "complete=true"
-
-	# if [ "$new_guest" -eq 0 ]; then
-	# 	export "new_guest=1"
-	# fi	
+	# Grab all possible fields 
+	email=$(echo "$final_query" | sed -E 's/.*email=([^,]*).*/\1/')
+	[ -n "$email" ] && export email="$email"
+	zipcode=$(echo "$final_query" | sed -E 's/.*zipcode=([^,]*).*/\1/')
+	[ -n "$zipcode" ] && export zipcode="$zipcode"
+	complete=$(echo "$final_query" | sed -E 's/.*complete=([^,]*).*/\1/')
+	[ -n "$complete" ] && export complete="$complete"
+	# export queryex="$final_query"
 
 	# Set new_guest to True
 	if [ "$tos" = "accepted" ]; then
 		export "new_guest=0"
 	fi	
-
-	# if [ "$complete" = "true" ]; then
-	# 	export "complete=0"
-	# fi
 
 	# Generate the dynamic portal splash page sequence
 	type generate_splash_sequence &>/dev/null && generate_splash_sequence || serve_error_message "Invalid ThemeSpec"

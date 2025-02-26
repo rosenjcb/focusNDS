@@ -58,28 +58,28 @@ login_with_voucher() {
 	# This is the simple click to continue splash page with no client validation.
 	# The client is however required to accept the terms of service.
 
+	# echo "<h1>Query: $queryex</h1>"
 	if [[ "$complete" = "true" ]]; then
-		echo "<p>Scenario 3</p>"
-		echo "<p>TOS: $tos</p>"
+		# echo "<p>Scenario 3</p>"
+		# echo "<p>TOS: $tos</p>"
 		voucher_validation
 		footer
 	elif [[ "$new_guest" -eq 0 ]]; then
-		echo "<p>Scenario 2</p>"
-		echo "<p>Voucher: $voucher</p>"
-		echo "<p>New Guest: $new_guest</p>"
-		echo "<p>Zipcode: $zipcode</p>"
-		echo "<p>Email: $email</p>"
-		echo "<p>TOS: $tos</p>"
+		# echo "<p>Scenario 2</p>"
+		# echo "<p>Voucher: $voucher</p>"
+		# echo "<p>New Guest: $new_guest</p>"
+		# echo "<p>Zipcode: $zipcode</p>"
+		# echo "<p>Email: $email</p>"
+		# echo "<p>TOS: $tos</p>"
 		voucher_form	
 		footer
 		lookup_guest
 	else
-		echo "<p>Scenario 1</p>"
-		echo "<p>Voucher: $voucher</p>"
-		echo "<p>New Guest: $new_guest</p>"
-		echo "<p>Zipcode: $zipcode</p>"
-		echo "<p>Email: $email</p>"
-		# fi
+		# echo "<p>Scenario 1</p>"
+		# echo "<p>Voucher: $voucher</p>"
+		# echo "<p>New Guest: $new_guest</p>"
+		# echo "<p>Zipcode: $zipcode</p>"
+		# echo "<p>Email: $email</p>"
 		voucher_form
 		footer
 	fi
@@ -88,11 +88,11 @@ login_with_voucher() {
 check_voucher() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
-	echo "<p>Unclean: $voucher</p>"
+	# echo "<p>Unclean: $voucher</p>"
 	if validation=$(echo -n $voucher |  grep -oE "^\([0-9]{3}\) [0-9]{3} - [0-9]{4}"); then
 		# echo "Original: $voucher"
 		voucher=$(echo "$voucher" | sed 's/[^0-9+]//g')
-		echo "<p>Cleaned: $voucher</p>"
+		# echo "<p>Cleaned: $voucher</p>"
 		# echo "Phone Number Validation successful, proceeding"
 		: #no-op
 	else
@@ -185,12 +185,12 @@ voucher_validation() {
 		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
 		# Set voucher used (useful if for accounting reasons you track who received which voucher)
 		userinfo="$title - $voucher"
-		echo "<span>UserInfo: $userinfo</span>"
-		echo "<span>Quotas: $quotas</span>"
+		# echo "<span>UserInfo: $userinfo</span>"
+		# echo "<span>Quotas: $quotas</span>"
 
 		# Authenticate and write to the log - returns with $ndsstatus set
 		auth_log
-		echo "<span>$ndsctlout</span>"
+		# echo "<span>$ndsctlout</span>"
 
 		# output the landing page - note many CPD implementations will close as soon as Internet access is detected
 		# The client may not see this page, or only see it briefly
