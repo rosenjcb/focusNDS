@@ -2175,7 +2175,7 @@ authenticate_guest_with_phone_number() {
 				\"email\": \"$email\"
 				}")
 		if [ "$patch_resp_http_code" -eq 200 ]; then
-			echo $patch_resp_http_code
+			# echo $patch_resp_http_code
 			export is_guest_ready="true"
 		else
 			export is_guest_ready="false"
@@ -2199,8 +2199,8 @@ authenticate_guest_with_phone_number() {
 			# echo "206 - Partial Resource"
 			export is_guest_ready="false"
 		else
-			return	
-			# echo "<p>Error: Received status code $guest_http_code<//p>"
+			# echo "Some other error happened..."
+			export is_guest_ready="false"
 		fi
 	fi
 }
@@ -2363,8 +2363,6 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	[ -n "$guest_id" ] && export guest_id="$guest_id"
 
 	authenticate_guest_with_phone_number
-
- 
 
 	# Generate the dynamic portal splash page sequence
 	type generate_splash_sequence &>/dev/null && generate_splash_sequence || serve_error_message "Invalid ThemeSpec"

@@ -14,6 +14,7 @@ focus_logo="/images/focus.png"
 backdrop="/images/focus.png"
 css_test="/splash-test.css"
 phone_validation_script="/phone-validation.js"
+location_name="Basecamp Cafe"
 
 # functions:
 
@@ -35,10 +36,12 @@ header() {
 		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">
 		<link rel=\"stylesheet\" type=\"text/css\" href=\"$gatewayurl$css_test\">
 		<script type=\"text/javascript\" src=\"$gatewayurl$phone_validation_script\"></script>
-		<title>Guest Access - Basecamp Cafe</title>
+		<title>Guest Access - $location_name</title>
 		</head>
 		<body>
-		<div class="page-root">
+		<div class=\"page-root\">
+		<div class=\"content-root\">
+		<img src=\"$gatewayurl$location_logo\" alt=\"$location_name\">
 	"
 }
 
@@ -46,7 +49,15 @@ footer() {
 	# Define a common footer html for every page served
 	year=$(date +'%Y')
 	echo "
-		<p>test</p>
+		<footer>
+			<hr />
+			<flex-column-center>
+				<img src=\"$gatewayurl$focus_logo\" />
+				<med-black>Thanks for trying us out!</med-black>
+				<med-black>Powered by FOCUS</med-black>
+			</flex-column-center>
+		</footer>
+		</div>
 		</div>
 		</body>
 		</html>
@@ -61,11 +72,10 @@ login_with_voucher() {
 
 	if [[ "$is_guest_ready" = "true" ]]; then
 		voucher_validation
-		footer
 	else
 		voucher_form
-		footer
 	fi
+	footer
 }
 
 check_voucher() {
@@ -234,7 +244,6 @@ voucher_validation() {
 
 	# Serve the rest of the page:
 	read_terms
-	footer
 }
 
 voucher_form() {
@@ -263,68 +272,50 @@ voucher_form() {
 	fi
 
 	read_terms
-
-	echo "
-		<footer>
-			<hr />
-			<flex-column-center>
-				<img src=\"$gatewayurl$focus_logo\" />
-				<med-black>Thanks for trying us out!</med-black>
-				<med-black>Powered by FOCUS</med-black>
-			</flex-column-center>
-		</footer>
-	</div>
-	"
-
-	# read_terms
 	footer
 }
 
 step_one() {
 	echo "
-		<div class="content-root">
-			<img src="$gatewayurl$location_logo" alt="Basecamp Cafe.">
-			<big-black>Free Wi-Fi</big-black>
-			
-			<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
-				<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
-				<br />
-				Loyalty Rewards Phone Number 
-				<input type=\"tel\" name=\"voucher\" id=\"phone\" placeholder=\"(206) 413-5555\" maxlength=\"16\" required />
-				<flex-row>
-					<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required /> 
-					I accept the Terms of Service
-				</flex-row>
-				<br />
-				<input type=\"submit\" value=\"Connect\" />
-			</form>
+		<big-black>Free Wi-Fi</big-black>
+		
+		<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
+			<br />
+			Loyalty Rewards Phone Number 
+			<input type=\"tel\" name=\"voucher\" id=\"phone\" placeholder=\"(206) 413-5555\" maxlength=\"16\" required />
+			<flex-row>
+				<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required /> 
+				I accept the Terms of Service
+			</flex-row>
+			<br />
+			<input type=\"submit\" value=\"Connect\" />
+		</form>
 		"
 }
 
 step_two() {
 	echo "
-		<div class="content-root">
-			<img src="$gatewayurl$location_logo" alt="Basecamp Cafe.">
-			<big-black>Just a few more things...</big-black>
-			
-			<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
-				<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
-				<input type=\"hidden\" name=\"complete\" value=\"true\" />
-				<input type=\"hidden\" name=\"tos\" value=\"accepted\" />
-				<input type=\"hidden\" name=\"voucher\" value=\"$voucher\" />
-				<input type=\"hidden\" name=\"id\" value=\"$guest_id\" />
-				<br />
-				First Name 
-				<input type=\"text\" name=\"firstname\" id=\"email\" placeholder=\"John\" required />
-				Last Name
-				<input type=\"text\" name=\"lastname\" id=\"email\" placeholder=\"Doe\" required />
-				Email 
-				<input type=\"text\" pattern=\"[^@\s]+@[^@\s]+\.[^@\s]+\" name=\"email\" id=\"email\" placeholder=\"you@domain.com\" required />
-				Zipcode
-				<input type=\"text\" pattern=\"[0-9]{5}\" name=\"zipcode\" id=\"zipcode\" placeholder=\"55555\" maxlength=\"5\" required />
-				<br />
-				<input type=\"submit\" value=\"Connect\" />
-			</form>
+		<big-black>Just a few more things...</big-black>
+		
+		<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
+			<input type=\"hidden\" name=\"complete\" value=\"true\" />
+			<input type=\"hidden\" name=\"tos\" value=\"accepted\" />
+			<input type=\"hidden\" name=\"voucher\" value=\"$voucher\" />
+			<input type=\"hidden\" name=\"id\" value=\"$guest_id\" />
+			<br />
+			First Name 
+			<input type=\"text\" name=\"firstname\" id=\"email\" placeholder=\"John\" required />
+			Last Name
+			<input type=\"text\" name=\"lastname\" id=\"email\" placeholder=\"Doe\" required />
+			Email 
+			<input type=\"text\" pattern=\"[^@\s]+@[^@\s]+\.[^@\s]+\" name=\"email\" id=\"email\" placeholder=\"you@domain.com\" required />
+			Zipcode
+			<input type=\"text\" pattern=\"[0-9]{5}\" name=\"zipcode\" id=\"zipcode\" placeholder=\"55555\" maxlength=\"5\" required />
+			<br />
+			<input type=\"submit\" value=\"Connect\" />
+		</form>
 		"
 }
 
