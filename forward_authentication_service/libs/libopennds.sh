@@ -2164,6 +2164,47 @@ convert_from_la() {
 	mac_from_la="$octet:$p2:$p3:$p4:$p5:$p6"
 }
 
+authenticate_guest_with_phone_number() {
+	if [ "$complete" = "true" ]; then
+		patch_resp_http_code=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH "http://localhost:8000/api/guests/$guest_id" \
+			-H "Content-Type: application/json" \
+			-d "{
+				\"firstName\": \"$firstname\",
+				\"lastName\": \"$lastname\",
+				\"zipcode\": \"$zipcode\",
+				\"email\": \"$email\"
+				}")
+		if [ "$patch_resp_http_code" -eq 200 ]; then
+			echo $patch_resp_http_code
+			export is_guest_ready="true"
+		else
+			export is_guest_ready="false"
+		fi
+	elif [[ -n "$voucher" ]]; then
+		phonenumber=$(echo "$voucher" | sed 's/[^0-9]//g')
+		guest_auth_response=$(curl -X GET "http://localhost:8000/api/authenticate?phoneNo=$phonenumber" -w "|%{http_code}")
+
+		export guest_http_code=$(echo "$guest_auth_response" | cut -d'|' -f2)
+		guest_json=$(echo "$guest_auth_response" | cut -d'|' -f1)
+
+		export guest_id=$(echo "$guest_json" | jq -r '.id')
+
+		if [ "$guest_http_code" -eq 200 ]; then
+			# echo "Success"
+			export is_guest_ready="true"
+		elif [ "$guest_http_code" -eq 201 ]; then
+			# echo "201 - Just created"
+			export is_guest_ready="false"
+		elif [ "$guest_http_code" -eq 206 ]; then
+			# echo "206 - Partial Resource"
+			export is_guest_ready="false"
+		else
+			return	
+			# echo "<p>Error: Received status code $guest_http_code<//p>"
+		fi
+	fi
+}
+
 #### end of functions ####
 
 
@@ -2304,7 +2345,6 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	my_query_string="${querystr#\?}"
 	cleaned_query=$(echo "$my_query_string" | sed 's/, /,/g')
 
-
 	# Remove 'fas' and 'tos' from query string
 	final_query=$(echo "$cleaned_query" | sed -E 's/(fas=[^,]*,? *|tos=[^,]*,? *)//g')
 
@@ -2313,14 +2353,18 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	[ -n "$email" ] && export email="$email"
 	zipcode=$(echo "$final_query" | sed -E 's/.*zipcode=([^,]*).*/\1/')
 	[ -n "$zipcode" ] && export zipcode="$zipcode"
+	firstname=$(echo "$final_query" | sed -E 's/.*firstname=([^,]*).*/\1/')
+	[ -n "$firstname" ] && export firstname="$firstname"
+	lastname=$(echo "$final_query" | sed -E 's/.*lastname=([^,]*).*/\1/')
+	[ -n "$lastname" ] && export lastname="$lastname"
 	complete=$(echo "$final_query" | sed -E 's/.*complete=([^,]*).*/\1/')
 	[ -n "$complete" ] && export complete="$complete"
-	# export queryex="$final_query"
+	guest_id=$(echo "$final_query" | sed -E 's/.*id=([^,]*).*/\1/')
+	[ -n "$guest_id" ] && export guest_id="$guest_id"
 
-	# Set new_guest to True
-	if [ "$tos" = "accepted" ]; then
-		export "new_guest=0"
-	fi	
+	authenticate_guest_with_phone_number
+
+ 
 
 	# Generate the dynamic portal splash page sequence
 	type generate_splash_sequence &>/dev/null && generate_splash_sequence || serve_error_message "Invalid ThemeSpec"

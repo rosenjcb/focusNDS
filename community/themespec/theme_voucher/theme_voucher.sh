@@ -9,8 +9,9 @@
 #
 
 title="theme_voucher"
-gearhouse_logo="/images/gearhouse.png"
+location_logo="/images/location-logo.png"
 focus_logo="/images/focus.png"
+backdrop="/images/focus.png"
 css_test="/splash-test.css"
 phone_validation_script="/phone-validation.js"
 
@@ -58,28 +59,10 @@ login_with_voucher() {
 	# This is the simple click to continue splash page with no client validation.
 	# The client is however required to accept the terms of service.
 
-	# echo "<h1>Query: $queryex</h1>"
-	if [[ "$complete" = "true" ]]; then
-		# echo "<p>Scenario 3</p>"
-		# echo "<p>TOS: $tos</p>"
+	if [[ "$is_guest_ready" = "true" ]]; then
 		voucher_validation
 		footer
-	elif [[ "$new_guest" -eq 0 ]]; then
-		# echo "<p>Scenario 2</p>"
-		# echo "<p>Voucher: $voucher</p>"
-		# echo "<p>New Guest: $new_guest</p>"
-		# echo "<p>Zipcode: $zipcode</p>"
-		# echo "<p>Email: $email</p>"
-		# echo "<p>TOS: $tos</p>"
-		voucher_form	
-		footer
-		lookup_guest
 	else
-		# echo "<p>Scenario 1</p>"
-		# echo "<p>Voucher: $voucher</p>"
-		# echo "<p>New Guest: $new_guest</p>"
-		# echo "<p>Zipcode: $zipcode</p>"
-		# echo "<p>Email: $email</p>"
 		voucher_form
 		footer
 	fi
@@ -87,13 +70,9 @@ login_with_voucher() {
 
 check_voucher() {
 	
-	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
-	# echo "<p>Unclean: $voucher</p>"
+	# Strict Voucher Validation for shell escape prevention - Only formatted national phone numbers are allowed.
 	if validation=$(echo -n $voucher |  grep -oE "^\([0-9]{3}\) [0-9]{3} - [0-9]{4}"); then
-		# echo "Original: $voucher"
 		voucher=$(echo "$voucher" | sed 's/[^0-9+]//g')
-		# echo "<p>Cleaned: $voucher</p>"
-		# echo "Phone Number Validation successful, proceeding"
 		: #no-op
 	else
 		return 1
@@ -185,12 +164,9 @@ voucher_validation() {
 		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
 		# Set voucher used (useful if for accounting reasons you track who received which voucher)
 		userinfo="$title - $voucher"
-		# echo "<span>UserInfo: $userinfo</span>"
-		# echo "<span>Quotas: $quotas</span>"
 
 		# Authenticate and write to the log - returns with $ndsstatus set
 		auth_log
-		# echo "<span>$ndsctlout</span>"
 
 		# output the landing page - note many CPD implementations will close as soon as Internet access is detected
 		# The client may not see this page, or only see it briefly
@@ -280,7 +256,7 @@ voucher_form() {
 	# echo "<p>New Guest? $new_guest</p>"
 	# echo "<p>TOS Value.. $tos</p>"
 
-	if [[ "$new_guest" -eq 0 ]]; then
+	if [[ "$is_guest_ready" = "false" ]]; then
 		step_two
 	else
 		step_one
@@ -307,7 +283,7 @@ voucher_form() {
 step_one() {
 	echo "
 		<div class="content-root">
-			<img src="$gatewayurl$gearhouse_logo" alt="Basecamp Cafe.">
+			<img src="$gatewayurl$location_logo" alt="Basecamp Cafe.">
 			<big-black>Free Wi-Fi</big-black>
 			
 			<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
@@ -328,7 +304,7 @@ step_one() {
 step_two() {
 	echo "
 		<div class="content-root">
-			<img src="$gatewayurl$gearhouse_logo" alt="Basecamp Cafe.">
+			<img src="$gatewayurl$location_logo" alt="Basecamp Cafe.">
 			<big-black>Just a few more things...</big-black>
 			
 			<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
@@ -336,11 +312,16 @@ step_two() {
 				<input type=\"hidden\" name=\"complete\" value=\"true\" />
 				<input type=\"hidden\" name=\"tos\" value=\"accepted\" />
 				<input type=\"hidden\" name=\"voucher\" value=\"$voucher\" />
+				<input type=\"hidden\" name=\"id\" value=\"$guest_id\" />
 				<br />
+				First Name 
+				<input type=\"text\" name=\"firstname\" id=\"email\" placeholder=\"John\" required />
+				Last Name
+				<input type=\"text\" name=\"lastname\" id=\"email\" placeholder=\"Doe\" required />
 				Email 
-				<input type=\"text\" name=\"email\" id=\"email\" placeholder=\"example@domain.com\" required />
+				<input type=\"text\" pattern=\"[^@\s]+@[^@\s]+\.[^@\s]+\" name=\"email\" id=\"email\" placeholder=\"you@domain.com\" required />
 				Zipcode
-				<input type=\"number\" name=\"zipcode\" id=\"zipcode\" placeholder=\"55555\" required />
+				<input type=\"text\" pattern=\"[0-9]{5}\" name=\"zipcode\" id=\"zipcode\" placeholder=\"55555\" maxlength=\"5\" required />
 				<br />
 				<input type=\"submit\" value=\"Connect\" />
 			</form>
