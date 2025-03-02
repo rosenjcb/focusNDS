@@ -6,3 +6,4 @@ scp -O splash-test.css root@10.0.0.2:/etc/opennds/htdocs
 scp -O phone-validation.js root@10.0.0.2:/etc/opennds/htdocs
 scp -O theme_voucher.sh root@10.0.0.2:/usr/lib/opennds
 scp -O ../../../forward_authentication_service/libs/libopennds.sh root@10.0.0.2:/usr/lib/opennds
+scp -O ../../../forward_authentication_service/libs/client_params.sh root@10.0.0.2:/usr/lib/opennds
