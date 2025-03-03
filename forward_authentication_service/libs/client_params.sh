@@ -160,7 +160,7 @@ header() {
 			<meta http-equiv=\"Expires\" content=\"0\">
 			<meta charset=\"utf-8\">
 			<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-			<link rel=\"shortcut icon\" href=\"$url/$location_logo\" type=\"image/x-icon\">
+			<link rel=\"shortcut icon\" href=\"$url$location_logo\" type=\"image/x-icon\">
 			<link rel=\"stylesheet\" type=\"text/css\" href=\"$url$css_test\">
 			<title>Guest WiFi Status - $location_name</title>
 		</head>
@@ -168,7 +168,7 @@ header() {
 		<body>
 		<div class=\"page-root\">
 		<div class=\"content-root\">
-		<img src=\"$gatewayurl$location_logo\" alt=\"$location_name\">
+		<img src=\"$url$location_logo\" alt=\"$location_name\">
 	"
 	echo "$header"
 }
@@ -180,7 +180,7 @@ footer() {
 		<footer>
 			<hr />
 			<flex-column-center>
-				<img src=\"$gatewayurl$focus_logo\" />
+				<img src=\"$url$focus_logo\" />
 				<med-black>Thanks for trying us out!</med-black>
 				<med-black>Powered by FOCUS</med-black>
 			</flex-column-center>
