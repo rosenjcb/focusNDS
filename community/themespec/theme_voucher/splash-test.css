@@ -1,12 +1,12 @@
-body {
+html, body {
     background: #ECE9E6;  /* fallback for old browsers */
-    background: -webkit-linear-gradient(to right, #FFFFFF, #ECE9E6);  /* Chrome 10-25, Safari 5.1-6 */
-    background: linear-gradient(to right, #FFFFFF, #ECE9E6); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
     color: #140f07;
     margin: 0;
-    padding: 10px;
+    padding: 0;
     font-family: sans-serif;
     align-items: center;
+    height: 100vh;
+    width: 100vw;
 }
 
 hr {
@@ -17,6 +17,10 @@ hr {
     margin: 1em 0;
     padding: 0;
     color: black;
+}
+
+p {
+    margin: 4px;
 }
 
 .offset {
@@ -45,8 +49,9 @@ hr {
 
 img {
     width: 60px;
-    margin-left: 0%;
-    margin-right: 10px;
+    /* margin-left: 0%;
+    margin-right: 10px; */
+    margin: 0;
     border-radius: 3px;
 }
 
@@ -54,8 +59,9 @@ img.small {
     float: left;
     position: relative;
     width: 25px;
-    margin-left: 0%;
-    margin-right: 10px;
+    /* margin-left: 0%;
+    margin-right: 10px; */
+    margin: 0;
     border-radius: 3px;
 }
 
@@ -78,7 +84,7 @@ input[type=submit], input[type=button] {
     border: 0;
     border-radius: 10px;
     background-color: #1a7856;
-    padding: 0 10px;
+    padding: 0 6px;
     color: #fff;
     cursor: pointer;
     box-shadow: rgba(50, 50, 93, 0.1) 0 0 0 1px inset,
@@ -109,9 +115,8 @@ flex-column-center {
 }
 
 div.page-root {
-    width: 100%;
-    height: 100%;
-    background-image: url("backdrop.jpg");
+    min-width: 100%;
+    min-height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -119,17 +124,43 @@ div.page-root {
     align-self: center;
 }
 
+@media (min-width: 768px) {
+    div.page-root {
+        background-image: url("images/backdrop.jpg");
+        background-size: cover;
+        background-position: center;
+        background-color: transparent; /* Ensure background color does not override */
+    }
+}
+
 div.content-root {
-    width: 60%;
+    width: 80%;
+    height: fit-content;
+    max-height: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-direction: column;
     align-self: center;
     background-color: #F5F5F5;
+    margin: 1em;
     padding: 1em;
     border-radius: 4px;
     gap: 8px;
+}
+
+p.stand-out {
+    align-self: center;
+    text-align: center;
+}
+
+@media (min-width: 768px) {
+    div.content-root {
+        max-width: 40%;
+        max-height: fit-content;
+        padding: 2em;
+        width: fit-content;
+    }
 }
 
 form {
@@ -138,6 +169,10 @@ form {
     flex-direction: column;
     padding: 0;
     margin: 0;
+}
+
+form.inline {
+    display: block;
 }
 
 div.submission {
@@ -154,11 +189,26 @@ med-blue {
     font-style: normal;
 }
 
-big-black {
-    font-size: 1.5em;
+h1.black-title {
     color: black;
     font-weight: bold;
     font-style: normal;
+    margin: 4px;
+}
+
+h2.black-subheading {
+    color: black;
+    font-weight: bold;
+    font-style: normal;
+    margin: 4px;
+    text-align: center;
+}
+
+div.section { 
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 8px;
 }
 
 big-red {
@@ -184,4 +234,17 @@ copy-right {
 
 footer {
     width: 100%;
+}
+
+ul {
+    display: flex;
+    flex-direction: column;
+    margin: 8px;
+    padding: 0;
+    gap: 8px;
+}
+
+li {
+    display: block;
+    text-align: start;
 }

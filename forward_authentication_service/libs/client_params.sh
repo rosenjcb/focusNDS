@@ -143,29 +143,32 @@ parse_parameters() {
 	fi
 }
 
+location_logo="/images/location-logo.png"
+focus_logo="/images/focus.png"
+backdrop="/images/backdrop.png"
+css_test="/splash-test.css"
+phone_validation_script="/phone-validation.js"
+location_name="Basecamp Cafe"
+
 header() {
 # Define a common header html for every page served
 	header="<!DOCTYPE html>
 		<html>
 		<head>
-		<meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\">
-		<meta http-equiv=\"Pragma\" content=\"no-cache\">
-		<meta http-equiv=\"Expires\" content=\"0\">
-		<meta charset=\"utf-8\">
-		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-		<link rel=\"shortcut icon\" href=\"$url/$imagepath\" type=\"image/x-icon\">
-		<link rel=\"stylesheet\" type=\"text/css\" href=\"$url/splash.css\">
-		<title>$gatewaynamehtml Client Session Status</title>
+			<meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\">
+			<meta http-equiv=\"Pragma\" content=\"no-cache\">
+			<meta http-equiv=\"Expires\" content=\"0\">
+			<meta charset=\"utf-8\">
+			<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+			<link rel=\"shortcut icon\" href=\"$url$location_logo\" type=\"image/x-icon\">
+			<link rel=\"stylesheet\" type=\"text/css\" href=\"$url$css_test\">
+			<title>Guest WiFi Status - $location_name</title>
 		</head>
 		<body>
-		<div class=\"offset\">
-		<big-red>
-			Session Status<br>
-		</big-red>
-		<med-blue>
-			$gatewaynamehtml
-		</med-blue><br>
-		<div class=\"insert\" style=\"max-width:100%;\">
+		<body>
+		<div class=\"page-root\">
+		<div class=\"content-root\">
+		<img src=\"$url$location_logo\" alt=\"$location_name\">
 	"
 	echo "$header"
 }
@@ -174,15 +177,14 @@ footer() {
 	# Define a common footer html for every page served
 	year=$(date +'%Y')
 	echo "
-		<hr>
-		<div style=\"font-size:0.5em;\">
-			<br>
-			<img style=\"height:60px; float:left;\" src=\"$url/$imagepath\" alt=\"Splash Page: For access to the Internet.\">
-			&copy; Portal: BlueWave Projects and Services 2015 - $year<br>
-			<br>
-			Portal Version: $version
-			<br><br><br><br>
-		</div>
+		<footer>
+			<hr />
+			<flex-column-center>
+				<img src=\"$url$focus_logo\" />
+				<med-black>Thanks for trying us out!</med-black>
+				<med-black>Powered by FOCUS</med-black>
+			</flex-column-center>
+		</footer>
 		</div>
 		</div>
 		</body>
@@ -214,23 +216,15 @@ body() {
 		checked="$advanced"
 
 		buttons="
-			<form action=\"$url/opennds_deny/\" method=\"get\">
+			<h2 class="black-subheading">Not you?</h2>
+			<form class="inline" action=\"$url/opennds_deny/\" method=\"get\">
 				<input type=\"submit\" value=\"Logout\" >
-			</form>
-
-			<hr>
-
-			<form action=\"$url/\" method=\"get\">
-				<input type=\"checkbox\" value=\"checked\" name=\"advanced\" $checked >
-				Select and click Refresh to see Advanced Account Details<br>
-				<input type=\"submit\" value=\"Refresh\" >
 			</form>
 		"
 
 		echo "$buttons"
 
-		if [ "$advanced" = "checked" ]; then
-			pagebody="
+		pagebody="
 			<div style=\"font-size:0.8em;\">
 				<br>
 				<b>IP address:</b> $ip<br>
@@ -253,29 +247,15 @@ body() {
 				<b>Average Download Rate This Session:</b> $download_session_avg Kb/s<br>
 				<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
 			</div>
-			"
-		else
-			pagebody="
-			<div style=\"font-size:0.8em;\">
-				<br>
-				<b>IP address:</b> $ip<br>
-				<b>MAC address:</b> $mac<br>
-				<b>Session Start:</b> $sessionstart<br>
-				<b>Session End:</b> $sessionend<br>
-				<b>Downloaded This Session:</b> $download_this_session KBytes<br>
-				<b>Uploaded This Session:</b> $upload_this_session KBytes<br>
-				<b>Average Download Rate This Session:</b> $download_session_avg Kb/s<br>
-				<b>Average Upload Rate This Session:</b> $upload_session_avg Kb/s<br>
-			</div>
-			"
-		fi
+		"
 
 	elif [ "$status" = "err511" ]; then
 
 		pagebody="
-			<h1>To login, click or tap the Continue button</h1>
+			<h2 class="black-subheading">Welcome to $location_name</h2>
+			<p class="stand-out">To login, click or tap the Continue button</p>
 			<form action=\"$url/login\" method=\"get\" target=\"_blank\">
-			<input type=\"submit\" value=\"Continue\" >
+				<input type=\"submit\" value=\"Continue\" >
 			</form>
 		"
 

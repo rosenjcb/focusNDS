@@ -730,6 +730,11 @@ auth_log () {
 	# We will not remove the client id file, rather we will let openNDS delete it on deauth/timeout
 }
 
+lookup_guest() {
+	# echo "Test test test"
+	export new_guest=1
+}
+
 write_log () {
 
 	configure_log_location
@@ -2159,6 +2164,47 @@ convert_from_la() {
 	mac_from_la="$octet:$p2:$p3:$p4:$p5:$p6"
 }
 
+authenticate_guest_with_phone_number() {
+	if [ "$complete" = "true" ]; then
+		patch_resp_http_code=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH "http://localhost:8000/api/guests/$guest_id" \
+			-H "Content-Type: application/json" \
+			-d "{
+				\"firstName\": \"$firstname\",
+				\"lastName\": \"$lastname\",
+				\"zipcode\": \"$zipcode\",
+				\"email\": \"$email\"
+				}")
+		if [ "$patch_resp_http_code" -eq 200 ]; then
+			# echo $patch_resp_http_code
+			export is_guest_ready="true"
+		else
+			export is_guest_ready="false"
+		fi
+	elif [[ -n "$voucher" ]]; then
+		phonenumber=$(echo "$voucher" | sed 's/[^0-9]//g')
+		guest_auth_response=$(curl -X GET "http://localhost:8000/api/authenticate?phoneNo=$phonenumber" -w "|%{http_code}")
+
+		export guest_http_code=$(echo "$guest_auth_response" | cut -d'|' -f2)
+		guest_json=$(echo "$guest_auth_response" | cut -d'|' -f1)
+
+		export guest_id=$(echo "$guest_json" | jq -r '.id')
+
+		if [ "$guest_http_code" -eq 200 ]; then
+			# echo "Success"
+			export is_guest_ready="true"
+		elif [ "$guest_http_code" -eq 201 ]; then
+			# echo "201 - Just created"
+			export is_guest_ready="false"
+		elif [ "$guest_http_code" -eq 206 ]; then
+			# echo "206 - Partial Resource"
+			export is_guest_ready="false"
+		else
+			# echo "Some other error happened..."
+			export is_guest_ready="false"
+		fi
+	fi
+}
+
 #### end of functions ####
 
 
@@ -2176,6 +2222,8 @@ querystr="$1"
 query_type=${querystr:0:9}
 
 if [ "$query_type" = "%3ffas%3d" ]; then
+
+
 	#Display a splash page sequence using a Themespec
 
 	#################################
@@ -2292,6 +2340,29 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	# Check if the client is already logged in (have probably tapped "back" on their browser)
 	# Make this a friendly message explaining they are good to go
 	check_authenticated
+
+	# Remove the leading '?' if present
+	my_query_string="${querystr#\?}"
+	cleaned_query=$(echo "$my_query_string" | sed 's/, /,/g')
+
+	# Remove 'fas' and 'tos' from query string
+	final_query=$(echo "$cleaned_query" | sed -E 's/(fas=[^,]*,? *|tos=[^,]*,? *)//g')
+
+	# Grab all possible fields 
+	email=$(echo "$final_query" | sed -E 's/.*email=([^,]*).*/\1/')
+	[ -n "$email" ] && export email="$email"
+	zipcode=$(echo "$final_query" | sed -E 's/.*zipcode=([^,]*).*/\1/')
+	[ -n "$zipcode" ] && export zipcode="$zipcode"
+	firstname=$(echo "$final_query" | sed -E 's/.*firstname=([^,]*).*/\1/')
+	[ -n "$firstname" ] && export firstname="$firstname"
+	lastname=$(echo "$final_query" | sed -E 's/.*lastname=([^,]*).*/\1/')
+	[ -n "$lastname" ] && export lastname="$lastname"
+	complete=$(echo "$final_query" | sed -E 's/.*complete=([^,]*).*/\1/')
+	[ -n "$complete" ] && export complete="$complete"
+	guest_id=$(echo "$final_query" | sed -E 's/.*id=([^,]*).*/\1/')
+	[ -n "$guest_id" ] && export guest_id="$guest_id"
+
+	authenticate_guest_with_phone_number
 
 	# Generate the dynamic portal splash page sequence
 	type generate_splash_sequence &>/dev/null && generate_splash_sequence || serve_error_message "Invalid ThemeSpec"

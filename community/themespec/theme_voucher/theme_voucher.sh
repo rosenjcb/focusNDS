@@ -9,10 +9,12 @@
 #
 
 title="theme_voucher"
-gearhouse_logo="/images/gearhouse.png"
+location_logo="/images/location-logo.png"
 focus_logo="/images/focus.png"
+backdrop="/images/backdrop.png"
 css_test="/splash-test.css"
 phone_validation_script="/phone-validation.js"
+location_name="Basecamp Cafe"
 
 # functions:
 
@@ -31,13 +33,15 @@ header() {
 		<meta http-equiv=\"Expires\" content=\"0\">
 		<meta charset=\"utf-8\">
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-		<link rel=\"shortcut icon\" href=\"/images/splash.jpg\" type=\"image/x-icon\">
+		<link rel=\"shortcut icon\" href=\"$gatewayurl$location_logo\" type=\"image/x-icon\">
 		<link rel=\"stylesheet\" type=\"text/css\" href=\"$gatewayurl$css_test\">
 		<script type=\"text/javascript\" src=\"$gatewayurl$phone_validation_script\"></script>
-		<title>Guest Access - Basecamp Cafe</title>
+		<title>Guest WiFi Access - $location_name</title>
 		</head>
 		<body>
-		<div class="page-root">
+		<div class=\"page-root\">
+		<div class=\"content-root\">
+		<img src=\"$gatewayurl$location_logo\" alt=\"$location_name\">
 	"
 }
 
@@ -45,6 +49,15 @@ footer() {
 	# Define a common footer html for every page served
 	year=$(date +'%Y')
 	echo "
+		<footer>
+			<hr />
+			<flex-column-center>
+				<img src=\"$gatewayurl$focus_logo\" />
+				<med-black>Thanks for trying us out!</med-black>
+				<med-black>Powered by FOCUS</med-black>
+			</flex-column-center>
+		</footer>
+		</div>
 		</div>
 		</body>
 		</html>
@@ -57,25 +70,19 @@ login_with_voucher() {
 	# This is the simple click to continue splash page with no client validation.
 	# The client is however required to accept the terms of service.
 
-	if [ "$tos" = "accepted" ]; then
-		#echo "$tos <br>"
-		#echo "$voucher <br>"
+	if [[ "$is_guest_ready" = "true" ]]; then
 		voucher_validation
-		footer
+	else
+		voucher_form
 	fi
-
-	voucher_form
 	footer
 }
 
 check_voucher() {
 	
-	# Strict Voucher Validation for shell escape prevention - Only alphanumeric (and dash character) allowed.
+	# Strict Voucher Validation for shell escape prevention - Only formatted national phone numbers are allowed.
 	if validation=$(echo -n $voucher |  grep -oE "^\([0-9]{3}\) [0-9]{3} - [0-9]{4}"); then
-		# echo "Original: $voucher"
 		voucher=$(echo "$voucher" | sed 's/[^0-9+]//g')
-		# echo "Cleaned: $voucher"
-		# echo "Phone Number Validation successful, proceeding"
 		: #no-op
 	else
 		return 1
@@ -102,9 +109,7 @@ check_voucher() {
 	##############################################################################################################################
 
 	output=$(grep $voucher $voucher_roll | head -n 1) # Store first occurence of voucher as variable
-	#echo "$output <br>" #Matched line
  	if [ $(echo -n $output | wc -w) -ge 1 ]; then 
-		#echo "Voucher Found - Checking Validity <br>"
 		current_time=$(date +%s)
 		voucher_token=$(echo "$output" | awk -F',' '{print $1}')
 		voucher_rate_down=$(echo "$output" | awk -F',' '{print $2}')
@@ -129,26 +134,23 @@ check_voucher() {
 			sed -i -r "s/($voucher.*,)(0)/\1$current_time/" $voucher_roll
 			return 0
 		else
-			#echo "Voucher Already Used, Checking validity <br>"
 			# Current timestamp <= than Punch Timestamp + Validity (minutes) * 60 secs/minute
 			voucher_expiration=$(($voucher_first_punched + $voucher_time_limit * 60))
 
 			if [ $current_time -le $voucher_expiration ]; then
 				time_remaining=$(( ($voucher_expiration - $current_time) / 60 ))
-				#echo "Voucher is still valid - You have $time_remaining minutes left <br>"
 				# Override session length according to voucher
 				session_length=$time_remaining
 				# Nothing to change in the roll
 				return 0
 			else
-				#echo "Voucher has expired, please try another one <br>"
 				# Delete expired voucher from roll
 				sed -i "/$voucher/"d $voucher_roll
 				return 1
 			fi
 		fi
 	else
-		echo "No Voucher Found - Retry <br>"
+		echo "<p class="stand-out">No Voucher Found - Retry</p>"
 		return 1
 	fi
 	
@@ -174,50 +176,21 @@ voucher_validation() {
 		# output the landing page - note many CPD implementations will close as soon as Internet access is detected
 		# The client may not see this page, or only see it briefly
 		auth_success="
-			<p>
-				<big-red>
-					You are now logged in and have been granted access to the Internet.
-				</big-red>
-				<hr>
-			</p>
-			This voucher is valid for $session_length minutes.
-			<hr>
-			<p>
-				<italic-black>
-					You can use your Browser, Email and other network Apps as you normally would.
-				</italic-black>
-			</p>
-			<p>
-				Your device originally requested <b>$originurl</b>
-				<br>
-				Click or tap Continue to go to there.
-			</p>
-			<form>
-				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
-			</form>
-			<hr>
+			<h1 class="black-title">You're Online Now!</h1>
+			<div class="section">
+				<p>You are now logged in and have been granted access to the Internet.</p>
+				<p>The session is valid for the rest of the day.</p>
+				<p>You can use your Browser, Email and other network Apps as you normally would.</p>
+				<p>Your device originally requested <b>$originurl</b></p>
+			</div>
+			<p class="stand-out">Click or tap Continue to go to there.</p>
 		"
 		auth_fail="
-			<p>
-				<big-red>
-					Something went wrong and you have failed to log in.
-				</big-red>
-				<hr>
-			</p>
-			<hr>
-			<p>
-				<italic-black>
-					Your login attempt probably timed out.
-				</italic-black>
-			</p>
-			<p>
-				<br>
-				Click or tap Continue to try again.
-			</p>
-			<form>
-				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
-			</form>
-			<hr>
+			<h1 class="black-title">Something went wrong and you have faild to login.</h1>
+			<div class="section">
+				<p>Your login attempt probably timed out.</p>
+			</div>
+			<p class="stand-out">Click or tap Continue to try again.</p>
 		"
 
 		if [ "$ndsstatus" = "authenticated" ]; then
@@ -225,8 +198,17 @@ voucher_validation() {
 		else
 			echo "$auth_fail"
 		fi
+
+		echo "
+			<form>
+				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
+			</form>
+			 "
 	else
-		echo "<h2>We can't find your phone number. Have you made a purchase in the last 2 hours?<br></h2>"
+		echo "
+			<h1 class="black-title">We can't find your phone number.</h1>
+			<h2>Have you made a purchase in the last 2 hours?</h2>
+		"
 		echo "
 			<form>
 				<input type=\"button\" VALUE=\"Continue\" onClick=\"location.href='$originurl'\" >
@@ -234,9 +216,7 @@ voucher_validation() {
 		"
 	fi
 
-	# Serve the rest of the page:
 	read_terms
-	footer
 }
 
 voucher_form() {
@@ -255,41 +235,55 @@ voucher_form() {
 
 	voucher_code=$(echo "$cpi_query" | awk -F "voucher%3d" '{printf "%s", $2}' | awk -F "%26" '{printf "%s", $1}')
 
-	echo "
-		<div class="content-root">
-			<img src="$gatewayurl$gearhouse_logo" alt="Basecamp Cafe.">
-			<big-black>Free Wi-Fi</big-black>
-			
-			<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
-				<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
-				<br />
-				Loyalty Rewards Phone Number 
-				<input type=\"tel\" name=\"voucher\" id=\"phone\" placeholder=\"(206) 413-5555\" maxlength=\"16\" required />
-				<flex-row>
-					<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required /> 
-					I accept the Terms of Service
-				</flex-row>
-				<br />
-				<input type=\"submit\" value=\"Connect\" />
-			</form>
-		"
+	if [[ "$is_guest_ready" = "false" ]]; then
+		step_two
+	else
+		step_one
+	fi
 
 	read_terms
-
-	echo "
-		<footer>
-			<hr />
-			<flex-column-center>
-				<img src=\"$gatewayurl$focus_logo\" />
-				<med-black>Thanks for trying us out!</med-black>
-				<med-black>Powered by FOCUS</med-black>
-			</flex-column-center>
-		</footer>
-	</div>
-	"
-
-	# read_terms
 	footer
+}
+
+step_one() {
+	echo "
+		<h1 class=\"black-title\">Free Wi-Fi</h1>
+		<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
+			Loyalty Rewards Phone Number 
+			<input type=\"tel\" name=\"voucher\" id=\"phone\" placeholder=\"(206) 413-5555\" maxlength=\"16\" pattern=\"\(\d{3}\) \d{3} - \d{4}\" required />
+			<flex-row>
+				<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required /> 
+				I accept the Terms of Service
+			</flex-row>
+			<br />
+			<input type=\"submit\" value=\"Connect\" />
+		</form>
+		"
+}
+
+step_two() {
+	echo "
+		<h1 class=\"black-title\">Free Wi-Fi</h1>
+		<h2 class=\"black-subheading\">Just a few more things...</h1>
+		<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
+			<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
+			<input type=\"hidden\" name=\"complete\" value=\"true\" />
+			<input type=\"hidden\" name=\"tos\" value=\"accepted\" />
+			<input type=\"hidden\" name=\"voucher\" value=\"$voucher\" />
+			<input type=\"hidden\" name=\"id\" value=\"$guest_id\" />
+			First Name 
+			<input type=\"text\" name=\"firstname\" id=\"email\" placeholder=\"John\" required />
+			Last Name
+			<input type=\"text\" name=\"lastname\" id=\"email\" placeholder=\"Doe\" required />
+			Email 
+			<input type=\"text\" pattern=\"[^@\s]+@[^@\s]+\.[^@\s]+\" name=\"email\" id=\"email\" placeholder=\"you@domain.com\" required />
+			Zipcode
+			<input type=\"text\" pattern=\"[0-9]{5}\" name=\"zipcode\" id=\"zipcode\" placeholder=\"55555\" maxlength=\"5\" required />
+			<br />
+			<input type=\"submit\" value=\"Connect\" />
+		</form>
+		"
 }
 
 read_terms() {
@@ -312,133 +306,17 @@ display_terms() {
 	# In most locations, a Privacy Statement is an essential part of the Terms of Service.
 	####
 
-	#Privacy
 	echo "
-		<b style=\"color:red;\">Privacy.</b><br>
-		<b>
-			By logging in to the system, you grant your permission for this system to store any data you provide for
-			the purposes of logging in, along with the networking parameters of your device that the system requires to function.<br>
-			All information is stored for your convenience and for the protection of both yourself and us.<br>
-			All information collected by this system is stored in a secure manner and is not accessible by third parties.<br>
-		</b><hr>
-	"
+		<h1 class="black-title">Privacy</h1>
+		By using this Wi-Fi, you agree to the following:
 
-	# Terms of Service
-	echo "
-		<b style=\"color:red;\">Terms of Service for this Hotspot.</b> <br>
-		<b>Access is granted on a basis of trust that you will NOT misuse or abuse that access in any way.</b><hr>
-		<b>Please scroll down to read the Terms of Service in full or click the Continue button to return to the Acceptance Page</b>
-		<form>
-			<input type=\"button\" VALUE=\"Continue\" onClick=\"history.go(-1);return true;\">
-		</form>
-	"
-
-	# Proper Use
-	echo "
-		<hr>
-		<b>Proper Use</b>
-		<p>
-			This Hotspot provides a wireless network that allows you to connect to the Internet. <br>
-			<b>Use of this Internet connection is provided in return for your FULL acceptance of these Terms Of Service.</b>
-		</p>
-		<p>
-			<b>You agree</b> that you are responsible for providing security measures that are suited for your intended use of the Service.
-			For example, you shall take full responsibility for taking adequate measures to safeguard your data from loss.
-		</p>
-		<p>
-			While the Hotspot uses commercially reasonable efforts to provide a secure service,
-			the effectiveness of those efforts cannot be guaranteed.
-		</p>
-		<p>
-			<b>You may</b> use the technology provided to you by this Hotspot for the sole purpose
-			of using the Service as described here.
-			You must immediately notify the Owner of any unauthorized use of the Service or any other security breach.<br><br>
-			We will give you an IP address each time you access the Hotspot, and it may change.
-			<br>
-			<b>You shall not</b> program any other IP or MAC address into your device that accesses the Hotspot.
-			You may not use the Service for any other reason, including reselling any aspect of the Service.
-			Other examples of improper activities include, without limitation:
-		</p>
-			<ol>
-				<li>
-					downloading or uploading such large volumes of data that the performance of the Service becomes
-					noticeably degraded for other users for a significant period;
-				</li>
-				<li>
-					attempting to break security, access, tamper with or use any unauthorized areas of the Service;
-				</li>
-				<li>
-					removing any copyright, trademark or other proprietary rights notices contained in or on the Service;
-				</li>
-				<li>
-					attempting to collect or maintain any information about other users of the Service
-					(including usernames and/or email addresses) or other third parties for unauthorized purposes;
-				</li>
-				<li>
-					logging onto the Service under false or fraudulent pretenses;
-				</li>
-				<li>
-					creating or transmitting unwanted electronic communications such as SPAM or chain letters to other users
-					or otherwise interfering with other user's enjoyment of the service;
-				</li>
-				<li>
-					transmitting any viruses, worms, defects, Trojan Horses or other items of a destructive nature; or
-				</li>
-				<li>
-					using the Service for any unlawful, harassing, abusive, criminal or fraudulent purpose.
-				</li>
-			</ol>
-	"
-
-	# Content Disclaimer
-	echo "
-		<hr>
-		<b>Content Disclaimer</b>
-		<p>
-			The Hotspot Owners do not control and are not responsible for data, content, services, or products
-			that are accessed or downloaded through the Service.
-			The Owners may, but are not obliged to, block data transmissions to protect the Owner and the Public.
-		</p>
-		The Owners, their suppliers and their licensors expressly disclaim to the fullest extent permitted by law,
-		all express, implied, and statutary warranties, including, without limitation, the warranties of merchantability
-		or fitness for a particular purpose.
-		<br><br>
-		The Owners, their suppliers and their licensors expressly disclaim to the fullest extent permitted by law
-		any liability for infringement of proprietory rights and/or infringement of Copyright by any user of the system.
-		Login details and device identities may be stored and be used as evidence in a Court of Law against such users.
-		<br>
-	"
-
-	# Limitation of Liability
-	echo "
-		<hr><b>Limitation of Liability</b>
-		<p>
-			Under no circumstances shall the Owners, their suppliers or their licensors be liable to any user or
-			any third party on account of that party's use or misuse of or reliance on the Service.
-		</p>
-		<hr><b>Changes to Terms of Service and Termination</b>
-		<p>
-			We may modify or terminate the Service and these Terms of Service and any accompanying policies,
-			for any reason, and without notice, including the right to terminate with or without notice,
-			without liability to you, any user or any third party. Please review these Terms of Service
-			from time to time so that you will be apprised of any changes.
-		</p>
-		<p>
-			We reserve the right to terminate your use of the Service, for any reason, and without notice.
-			Upon any such termination, any and all rights granted to you by this Hotspot Owner shall terminate.
-		</p>
-	"
-
-	# Indemnity
-	echo "
-		<hr><b>Indemnity</b>
-		<p>
-			<b>You agree</b> to hold harmless and indemnify the Owners of this Hotspot,
-			their suppliers and licensors from and against any third party claim arising from
-			or in any way related to your use of the Service, including any liability or expense arising from all claims,
-			losses, damages (actual and consequential), suits, judgments, litigation costs and legal fees, of every kind and nature.
-		</p>
-		<hr>
+		<ul>
+			<li><b>Privacy</b>: We may store login data and device information for security and functionality. Your data is kept secure and not shared with third parties.</li>
+			<li><b>Proper Use</b>: Do not misuse the network, engage in illegal activities, or disrupt service for others. Unauthorized access, hacking, spamming, or other harmful actions are prohibited.</li>
+			<li><b>Security & Liability</b>: You are responsible for securing your own data. While we take precautions, we do not guarantee a secure connection. We are not liable for any damages, data loss, or third-party content accessed through this service.</li>
+			<li><b>Changes & Termination</b>: We may modify or terminate access at any time without notice.</li>
+		</ul>
+		<p>By continuing, you accept these terms.</p>
 		<form>
 			<input type=\"button\" VALUE=\"Continue\" onClick=\"history.go(-1);return true;\">
 		</form>
