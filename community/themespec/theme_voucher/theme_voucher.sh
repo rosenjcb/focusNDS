@@ -80,77 +80,46 @@ login_with_voucher() {
 
 check_voucher() {
 	
+	most_recent_visit=""
 	# Strict Voucher Validation for shell escape prevention - Only formatted national phone numbers are allowed.
 	if validation=$(echo -n $voucher |  grep -oE "^\([0-9]{3}\) [0-9]{3} - [0-9]{4}"); then
 		voucher=$(echo "$voucher" | sed 's/[^0-9+]//g')
+		most_recent_visit=$(curl -X GET "http://localhost:8000/api/visits/recent?phoneNumber=$phonenumber")
 		: #no-op
 	else
 		return 1
 	fi
 
-	##############################################################################################################################
-	# WARNING
-	# The voucher roll is written to on every login
-	# If its location is on router flash, this **WILL** result in non-repairable failure of the flash memory
-	# and therefore the router itself. This will happen, most likely within several months depending on the number of logins.
-	#
-	# The location is set here to be the same location as the openNDS log (logdir)
-	# By default this will be on the tmpfs (ramdisk) of the operating system.
-	# Files stored here will not survive a reboot.
-
-	voucher_roll="$logdir""vouchers.txt"
-
-	#
-	# In a production system, the mountpoint for logdir should be changed to the mount point of some external storage
-	# eg a usb stick, an external drive, a network shared drive etc.
-	#
-	# See "Customise the Logfile location" at the end of this file
-	#
-	##############################################################################################################################
-
 	output=$(grep $voucher $voucher_roll | head -n 1) # Store first occurence of voucher as variable
- 	if [ $(echo -n $output | wc -w) -ge 1 ]; then 
+ 	if [ -n "$most_recent_visit"  ]; then 
+		# voucher_token=$(echo "$output" | awk -F',' '{print $1}')
+		# voucher_rate_down=$(echo "$output" | awk -F',' '{print $2}')
+		# voucher_rate_up=$(echo "$output" | awk -F',' '{print $3}')
+		# voucher_quota_down=$(echo "$output" | awk -F',' '{print $4}')
+		# voucher_quota_up=$(echo "$output" | awk -F',' '{print $5}')
+		# voucher_time_limit=$(echo "$output" | awk -F',' '{print $6}')
+		# voucher_first_punched=$(echo "$output" | awk -F',' '{print $7}')
+
 		current_time=$(date +%s)
-		voucher_token=$(echo "$output" | awk -F',' '{print $1}')
-		voucher_rate_down=$(echo "$output" | awk -F',' '{print $2}')
-		voucher_rate_up=$(echo "$output" | awk -F',' '{print $3}')
-		voucher_quota_down=$(echo "$output" | awk -F',' '{print $4}')
-		voucher_quota_up=$(echo "$output" | awk -F',' '{print $5}')
-		voucher_time_limit=$(echo "$output" | awk -F',' '{print $6}')
-		voucher_first_punched=$(echo "$output" | awk -F',' '{print $7}')
+		upload_rate=1024
+		download_rate=5120
+		upload_quota=0
+		download_quota=0
+		start_time=$(echo "$most_recent_visit" | jq '.startTime')
+		end_time=$(echo "$most_recent_visit" | jq '.')
+		time_limit=$(echo "$output" | awk -F',' '{print $6}')
 
-		# Set limits according to voucher
-		upload_rate=$voucher_rate_up
-		download_rate=$voucher_rate_down
-		upload_quota=$voucher_quota_up
-		download_quota=$voucher_quota_down
+		voucher_expiration=$(($start_time + $time_limit * 60))
 
-		if [ $voucher_first_punched -eq 0 ]; then
-			#echo "First Voucher Use"
-			# "Punch" the voucher by setting the timestamp to now
-			voucher_expiration=$(($current_time + $voucher_time_limit * 60))
-			# Override session length according to voucher
-			session_length=$voucher_time_limit
-			sed -i -r "s/($voucher.*,)(0)/\1$current_time/" $voucher_roll
+		if [ $current_time -le $voucher_expiration ]; then
+			time_remaining=$(( ($voucher_expiration - $current_time) / 60 ))
+			session_length=$time_remaining
 			return 0
 		else
-			# Current timestamp <= than Punch Timestamp + Validity (minutes) * 60 secs/minute
-			voucher_expiration=$(($voucher_first_punched + $voucher_time_limit * 60))
-
-			if [ $current_time -le $voucher_expiration ]; then
-				time_remaining=$(( ($voucher_expiration - $current_time) / 60 ))
-				# Override session length according to voucher
-				session_length=$time_remaining
-				# Nothing to change in the roll
-				return 0
-			else
-				# Delete expired voucher from roll
-				sed -i "/$voucher/"d $voucher_roll
-				return 1
-			fi
+			return 1
 		fi
 	else
-		echo "<p class="stand-out">No Voucher Found - Retry</p>"
+		echo "<p class="stand-out">Something went wrong when validating your phoneNumber. Please try again.</p>"
 		return 1
 	fi
 	
