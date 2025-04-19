@@ -19,7 +19,12 @@ if ! uci show focus.@settings[0] >/dev/null 2>&1; then
     uci add focus settings >/dev/null
 fi
 
-# Set values
+# Set OpenNDS Config
+uci set opennds.@opennds[0].login_option_enabled='3'
+uci set opennds.@opennds[0].themespec_path='/usr/lib/opennds/theme_focus.sh'
+uci commit opennds
+
+# Set FOCUS Config 
 uci set focus.@settings[0].LOCATION_ID=$LOCATION_ID
 uci set focus.@settings[0].LOCATION_NAME="$LOCATION_NAME"
 uci commit focus

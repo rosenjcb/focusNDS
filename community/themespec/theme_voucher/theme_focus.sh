@@ -12,7 +12,7 @@ title="theme_voucher"
 location_logo="/images/location-logo.png"
 focus_logo="/images/focus.png"
 backdrop="/images/backdrop.png"
-css_test="/splash-test.css"
+css="/styles.css"
 phone_validation_script="/phone-validation.js"
 FOCUS_LOCATION_ID=$(uci get focus.@settings[0].LOCATION_ID 2>/dev/null)
 FOCUS_LOCATION_NAME=$(uci get focus.@settings[0].LOCATION_NAME 2>/dev/null)
@@ -35,7 +35,7 @@ header() {
 		<meta charset=\"utf-8\">
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
 		<link rel=\"shortcut icon\" href=\"$gatewayurl$location_logo\" type=\"image/x-icon\">
-		<link rel=\"stylesheet\" type=\"text/css\" href=\"$gatewayurl$css_test\">
+		<link rel=\"stylesheet\" type=\"text/css\" href=\"$gatewayurl$css\">
 		<script type=\"text/javascript\" src=\"$gatewayurl$phone_validation_script\"></script>
 		<title>Guest WiFi Access - $FOCUS_LOCATION_NAME</title>
 		</head>
@@ -119,10 +119,8 @@ guest_validation() {
 
 		# Refresh quotas with ones imported from the voucher roll.
 		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
-		echo "quotas: $quotas"
 		# Set voucher used (useful if for accounting reasons you track who received which voucher)
 		userinfo="$title - $phonenumber"
-		echo "userinfo: $userinfo"
 
 		# Authenticate and write to the log - returns with $ndsstatus set
 		auth_log
