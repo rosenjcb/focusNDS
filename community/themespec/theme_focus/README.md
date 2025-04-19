@@ -1,8 +1,8 @@
 # FOCUS ThemeSpec
-This ThemeSpec provides a simple portal requiring a voucher to login.
+This ThemeSpec provides a simple portal requiring a phonenumber to login. If the phonenumber isn't used previously, more info is requested from the user before completing authentication.
 
 # Installation (openWRT)
-**Copy the themespec (theme_voucher.sh) file and the voucher.txt file.**
+**Copies all themespec settings and resources (e.g. `theme_focus.sh`) needed to run FocusNDS.**
 Run in order:
 - `send-config.sh`
 - `send-over.sh`
