@@ -82,7 +82,7 @@ login_as_guest() {
 fetch_most_recent_visit() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only formatted national phone numbers are allowed.
-	most_recent_visit="{}"
+	most_recent_visit=""
 	most_recent_visit=$(curl -X GET "http://localhost:8000/api/visits/recent?phoneNumber=$phonenumber&locationId=$FOCUS_LOCATION_ID")
 
  	if [ -n "$most_recent_visit"  ]; then 
@@ -102,7 +102,7 @@ fetch_most_recent_visit() {
 			return 1
 		fi
 	else
-		echo "<p class="stand-out">Something went wrong when fetching your most recent visit. Please try again.</p>"
+		echo "<p class="stand-out">Something went wrong when fetching your most recent visit for phone number \"$national_phonenumber\" at this location. Please try again.</p>"
 		return 1
 	fi
 	
@@ -207,6 +207,7 @@ step_two() {
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
 			<input type=\"hidden\" name=\"complete\" value=\"true\" />
 			<input type=\"hidden\" name=\"tos\" value=\"accepted\" />
+			<input type=\"hidden\" name=\"nationalPhonenumber\" value=\"$national_phonenumber\" />
 			<input type=\"hidden\" name=\"guestId\" value=\"$guest_id\" />
 			First Name 
 			<input type=\"text\" name=\"firstname\" id=\"email\" placeholder=\"John\" required />

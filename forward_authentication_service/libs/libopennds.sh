@@ -723,17 +723,11 @@ auth_log () {
 
 	do_ndsctl
 	authstat=$ndsctlout
-	echo $"auth_status is $authstat"
 	# $authstat contains the response from do_ndsctl
 
 	loginfo="$userinfo, status=$authstat, mac=$clientmac, ip=$clientip, client_type=$client_type, cpi_query=$cpi_query, zone=$client_zone, ua=$user_agent"
 	write_log
 	# We will not remove the client id file, rather we will let openNDS delete it on deauth/timeout
-}
-
-lookup_guest() {
-	# echo "Test test test"
-	export new_guest=1
 }
 
 write_log () {
@@ -2169,6 +2163,9 @@ authenticate_guest_with_phone_number() {
 
 	# So this is really effed up. We should not host this API on the POS itself as this is insecure AF!!!
 	# I really need to get my security shit together.
+	phonenumber=$(echo "$national_phonenumber" | sed 's/[^0-9]//g')
+	[ -n "$phonenumber" ] && export phonenumber="$phonenumber"
+
 	if [ "$complete" = "true" ]; then
 		patch_resp_http_code=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH "http://localhost:8000/api/guests/$guest_id" \
 			-H "Content-Type: application/json" \
@@ -2183,8 +2180,8 @@ authenticate_guest_with_phone_number() {
 		else
 			export is_guest_ready="false"
 		fi
+
 	elif [[ -n "$national_phonenumber" ]]; then
-		phonenumber=$(echo "$national_phonenumber" | sed 's/[^0-9]//g')
 		FOCUS_LOCATION_ID=$(uci get focus.@settings[0].LOCATION_ID 2>/dev/null)
 		guest_auth_response=$(curl -X GET "http://localhost:8000/api/authenticate?phoneNo=$phonenumber&locationId=$FOCUS_LOCATION_ID" -w "|%{http_code}")
 
