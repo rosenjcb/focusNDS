@@ -12,14 +12,15 @@ title="theme_voucher"
 location_logo="/images/location-logo.png"
 focus_logo="/images/focus.png"
 backdrop="/images/backdrop.png"
-css_test="/splash-test.css"
+css="/styles.css"
 phone_validation_script="/phone-validation.js"
-location_name="Basecamp Cafe"
+FOCUS_LOCATION_ID=$(uci get focus.@settings[0].LOCATION_ID 2>/dev/null)
+FOCUS_LOCATION_NAME=$(uci get focus.@settings[0].LOCATION_NAME 2>/dev/null)
 
 # functions:
 
 generate_splash_sequence() {
-	login_with_voucher
+	login_as_guest
 }
 
 header() {
@@ -34,14 +35,14 @@ header() {
 		<meta charset=\"utf-8\">
 		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
 		<link rel=\"shortcut icon\" href=\"$gatewayurl$location_logo\" type=\"image/x-icon\">
-		<link rel=\"stylesheet\" type=\"text/css\" href=\"$gatewayurl$css_test\">
+		<link rel=\"stylesheet\" type=\"text/css\" href=\"$gatewayurl$css\">
 		<script type=\"text/javascript\" src=\"$gatewayurl$phone_validation_script\"></script>
-		<title>Guest WiFi Access - $location_name</title>
+		<title>Guest WiFi Access - $FOCUS_LOCATION_NAME</title>
 		</head>
 		<body>
 		<div class=\"page-root\">
 		<div class=\"content-root\">
-		<img src=\"$gatewayurl$location_logo\" alt=\"$location_name\">
+		<img src=\"$gatewayurl$location_logo\" alt=\"$FOCUS_LOCATION_NAME\">
 	"
 }
 
@@ -66,91 +67,42 @@ footer() {
 	exit 0
 }
 
-login_with_voucher() {
+login_as_guest() {
 	# This is the simple click to continue splash page with no client validation.
 	# The client is however required to accept the terms of service.
 
 	if [[ "$is_guest_ready" = "true" ]]; then
-		voucher_validation
+		guest_validation
 	else
-		voucher_form
+		guest_form
 	fi
 	footer
 }
 
-check_voucher() {
+fetch_most_recent_visit() {
 	
 	# Strict Voucher Validation for shell escape prevention - Only formatted national phone numbers are allowed.
-	if validation=$(echo -n $voucher |  grep -oE "^\([0-9]{3}\) [0-9]{3} - [0-9]{4}"); then
-		voucher=$(echo "$voucher" | sed 's/[^0-9+]//g')
-		: #no-op
-	else
-		return 1
-	fi
+	most_recent_visit=""
+	most_recent_visit=$(curl -X GET "http://localhost:8000/api/visits/recent?phoneNumber=$phonenumber&locationId=$FOCUS_LOCATION_ID")
 
-	##############################################################################################################################
-	# WARNING
-	# The voucher roll is written to on every login
-	# If its location is on router flash, this **WILL** result in non-repairable failure of the flash memory
-	# and therefore the router itself. This will happen, most likely within several months depending on the number of logins.
-	#
-	# The location is set here to be the same location as the openNDS log (logdir)
-	# By default this will be on the tmpfs (ramdisk) of the operating system.
-	# Files stored here will not survive a reboot.
-
-	voucher_roll="$logdir""vouchers.txt"
-
-	#
-	# In a production system, the mountpoint for logdir should be changed to the mount point of some external storage
-	# eg a usb stick, an external drive, a network shared drive etc.
-	#
-	# See "Customise the Logfile location" at the end of this file
-	#
-	##############################################################################################################################
-
-	output=$(grep $voucher $voucher_roll | head -n 1) # Store first occurence of voucher as variable
- 	if [ $(echo -n $output | wc -w) -ge 1 ]; then 
+ 	if [ -n "$most_recent_visit"  ]; then 
 		current_time=$(date +%s)
-		voucher_token=$(echo "$output" | awk -F',' '{print $1}')
-		voucher_rate_down=$(echo "$output" | awk -F',' '{print $2}')
-		voucher_rate_up=$(echo "$output" | awk -F',' '{print $3}')
-		voucher_quota_down=$(echo "$output" | awk -F',' '{print $4}')
-		voucher_quota_up=$(echo "$output" | awk -F',' '{print $5}')
-		voucher_time_limit=$(echo "$output" | awk -F',' '{print $6}')
-		voucher_first_punched=$(echo "$output" | awk -F',' '{print $7}')
+		upload_rate=1024
+		download_rate=5120
+		upload_quota=0
+		download_quota=0
+		start_time=$(echo "$most_recent_visit" | jq -r '.startTime' | sed 's/T/ /; s/\..*Z//' | while read ts; do date -u -d "$ts" +%s; done)
+		end_time=$(echo "$most_recent_visit" | jq -r '.endTime' | sed 's/T/ /; s/\..*Z//' | while read ts; do date -u -d "$ts" +%s; done)
 
-		# Set limits according to voucher
-		upload_rate=$voucher_rate_up
-		download_rate=$voucher_rate_down
-		upload_quota=$voucher_quota_up
-		download_quota=$voucher_quota_down
-
-		if [ $voucher_first_punched -eq 0 ]; then
-			#echo "First Voucher Use"
-			# "Punch" the voucher by setting the timestamp to now
-			voucher_expiration=$(($current_time + $voucher_time_limit * 60))
-			# Override session length according to voucher
-			session_length=$voucher_time_limit
-			sed -i -r "s/($voucher.*,)(0)/\1$current_time/" $voucher_roll
+		if [ $current_time -le $end_time ]; then
+			time_remaining=$(( ($end_time - $current_time) / 60 ))
+			session_length=$time_remaining
 			return 0
 		else
-			# Current timestamp <= than Punch Timestamp + Validity (minutes) * 60 secs/minute
-			voucher_expiration=$(($voucher_first_punched + $voucher_time_limit * 60))
-
-			if [ $current_time -le $voucher_expiration ]; then
-				time_remaining=$(( ($voucher_expiration - $current_time) / 60 ))
-				# Override session length according to voucher
-				session_length=$time_remaining
-				# Nothing to change in the roll
-				return 0
-			else
-				# Delete expired voucher from roll
-				sed -i "/$voucher/"d $voucher_roll
-				return 1
-			fi
+			return 1
 		fi
 	else
-		echo "<p class="stand-out">No Voucher Found - Retry</p>"
+		echo "<p class="stand-out">Something went wrong when fetching your most recent visit for phone number \"$national_phonenumber\" at this location. Please try again.</p>"
 		return 1
 	fi
 	
@@ -158,17 +110,17 @@ check_voucher() {
 	return 1
 }
 
-voucher_validation() {
+guest_validation() {
 	originurl=$(printf "${originurl//%/\\x}")
 
-	check_voucher
+    fetch_most_recent_visit	
 	if [ $? -eq 0 ]; then
 		#echo "Voucher is Valid, click Continue to finish login<br>"
 
 		# Refresh quotas with ones imported from the voucher roll.
 		quotas="$session_length $upload_rate $download_rate $upload_quota $download_quota"
 		# Set voucher used (useful if for accounting reasons you track who received which voucher)
-		userinfo="$title - $voucher"
+		userinfo="$title - $phonenumber"
 
 		# Authenticate and write to the log - returns with $ndsstatus set
 		auth_log
@@ -219,22 +171,7 @@ voucher_validation() {
 	read_terms
 }
 
-voucher_form() {
-	# Define a click to Continue form
-
-	# From openNDS v10.2.0 onwards, QL code scanning is supported to pre-fill the "voucher" field in this voucher_form page.
-	#
-	# The QL code must be of the link type and be of the following form:
-	#
-	# http://[gatewayfqdn]/login?voucher=[voucher_code]
-	#
-	# where [gatewayfqdn] defaults to status.client (can be set in the config)
-	# and [voucher_code] is of course the unique voucher code for the current user
-
-	# Get the voucher code:
-
-	voucher_code=$(echo "$cpi_query" | awk -F "voucher%3d" '{printf "%s", $2}' | awk -F "%26" '{printf "%s", $1}')
-
+guest_form() {
 	if [[ "$is_guest_ready" = "false" ]]; then
 		step_two
 	else
@@ -251,7 +188,7 @@ step_one() {
 		<form action=\"/opennds_preauth/\" method=\"get\" id="guestLogin">
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
 			Loyalty Rewards Phone Number 
-			<input type=\"tel\" name=\"voucher\" id=\"phone\" placeholder=\"(206) 413-5555\" maxlength=\"16\" pattern=\"\(\d{3}\) \d{3} - \d{4}\" required />
+			<input type=\"tel\" name=\"nationalPhonenumber\" id=\"phone\" placeholder=\"(206) 413-5555\" maxlength=\"16\" pattern=\"\(\d{3}\) \d{3} - \d{4}\" required />
 			<flex-row>
 				<input type=\"checkbox\" name=\"tos\" value=\"accepted\" required /> 
 				I accept the Terms of Service
@@ -270,8 +207,8 @@ step_two() {
 			<input type=\"hidden\" name=\"fas\" value=\"$fas\" />
 			<input type=\"hidden\" name=\"complete\" value=\"true\" />
 			<input type=\"hidden\" name=\"tos\" value=\"accepted\" />
-			<input type=\"hidden\" name=\"voucher\" value=\"$voucher\" />
-			<input type=\"hidden\" name=\"id\" value=\"$guest_id\" />
+			<input type=\"hidden\" name=\"nationalPhonenumber\" value=\"$national_phonenumber\" />
+			<input type=\"hidden\" name=\"guestId\" value=\"$guest_id\" />
 			First Name 
 			<input type=\"text\" name=\"firstname\" id=\"email\" placeholder=\"John\" required />
 			Last Name

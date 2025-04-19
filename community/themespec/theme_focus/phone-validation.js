@@ -2,11 +2,7 @@ window.addEventListener('load', () => {
   const phoneInput = document.querySelector('#phone');
   phoneInput.addEventListener('keydown', disallowNonNumericInput);
   phoneInput.addEventListener('keyup', formatToPhone);
-  // const formSubmit = document.querySelector('#guestLogin');
-  // formSubmit.addEventListener('submit', formatToService);
   const zipcodeInput = document.querySelector('#zipcode');
-  // zipcodeInput.addEventListener('keydown', disallowNonZip);
-  // zipcodeInput.addEventListener('keyup', disallowNonZip);
   zipcodeInput.addEventListener('input', disallowNonZip);
 });
 
@@ -18,10 +14,6 @@ const disallowNonNumericInput = (evt) => {
 }
 
 const disallowNonZip = (evt) => {
-  // if (evt.target.value.length > 5) { return; }
-  // if (evt.ctrlKey) { return; }
-  // if (evt.key.length > 1) { return; }
-  // if (/[0-9.]/.test(evt.key)) { return; }
   evt.target.value = evt.targ.value.replace('/[^0-9]/g', '').slice(0,5);
   evt.preventDefault();
 }
@@ -36,8 +28,3 @@ const formatToPhone = (evt) => {
   else if(digits.length > 3) {evt.target.value = `(${areaCode}) ${prefix}`;}
   else if(digits.length > 0) {evt.target.value = `(${areaCode}`;}
 };
-
-// const formatToZipcode = (evt) => {
-//   const zipcode = evt.target.value.replace(/\D/g,'').substring(0,10);
-//   if zipcode.length > 
-// }
