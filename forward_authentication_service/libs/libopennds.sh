@@ -723,6 +723,7 @@ auth_log () {
 
 	do_ndsctl
 	authstat=$ndsctlout
+	echo $"auth_status is $authstat"
 	# $authstat contains the response from do_ndsctl
 
 	loginfo="$userinfo, status=$authstat, mac=$clientmac, ip=$clientip, client_type=$client_type, cpi_query=$cpi_query, zone=$client_zone, ua=$user_agent"
@@ -2165,6 +2166,9 @@ convert_from_la() {
 }
 
 authenticate_guest_with_phone_number() {
+
+	# So this is really effed up. We should not host this API on the POS itself as this is insecure AF!!!
+	# I really need to get my security shit together.
 	if [ "$complete" = "true" ]; then
 		patch_resp_http_code=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH "http://localhost:8000/api/guests/$guest_id" \
 			-H "Content-Type: application/json" \
@@ -2175,14 +2179,14 @@ authenticate_guest_with_phone_number() {
 				\"email\": \"$email\"
 				}")
 		if [ "$patch_resp_http_code" -eq 200 ]; then
-			# echo $patch_resp_http_code
 			export is_guest_ready="true"
 		else
 			export is_guest_ready="false"
 		fi
-	elif [[ -n "$voucher" ]]; then
-		phonenumber=$(echo "$voucher" | sed 's/[^0-9]//g')
-		guest_auth_response=$(curl -X GET "http://localhost:8000/api/authenticate?phoneNo=$phonenumber" -w "|%{http_code}")
+	elif [[ -n "$national_phonenumber" ]]; then
+		phonenumber=$(echo "$national_phonenumber" | sed 's/[^0-9]//g')
+		FOCUS_LOCATION_ID=$(uci get focus.@settings[0].LOCATION_ID 2>/dev/null)
+		guest_auth_response=$(curl -X GET "http://localhost:8000/api/authenticate?phoneNo=$phonenumber&locationId=$FOCUS_LOCATION_ID" -w "|%{http_code}")
 
 		export guest_http_code=$(echo "$guest_auth_response" | cut -d'|' -f2)
 		guest_json=$(echo "$guest_auth_response" | cut -d'|' -f1)
@@ -2359,8 +2363,10 @@ if [ "$query_type" = "%3ffas%3d" ]; then
 	[ -n "$lastname" ] && export lastname="$lastname"
 	complete=$(echo "$final_query" | sed -E 's/.*complete=([^,]*).*/\1/')
 	[ -n "$complete" ] && export complete="$complete"
-	guest_id=$(echo "$final_query" | sed -E 's/.*id=([^,]*).*/\1/')
+	guest_id=$(echo "$final_query" | sed -E 's/.*guestId=([^,]*).*/\1/')
 	[ -n "$guest_id" ] && export guest_id="$guest_id"
+	national_phonenumber=$(echo "$final_query" | sed -E 's/.*nationalPhonenumber=([^,]*).*/\1/')
+	[ -n "$national_phonenumber" ] && export national_phonenumber="$national_phonenumber"
 
 	authenticate_guest_with_phone_number
 

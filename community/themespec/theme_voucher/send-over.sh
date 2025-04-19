@@ -1,5 +1,5 @@
 # Default IP
-DEST_IP=${1:-base-camp-wifi-1-ssh.gofocus.space}
+DEST_IP=${1:-10.0.0.2}
 
 # Define file transfers
 scp -O backdrop.jpg root@$DEST_IP:/etc/opennds/htdocs/images # /images is wrong but I'm not sure if I want a backdrop.
